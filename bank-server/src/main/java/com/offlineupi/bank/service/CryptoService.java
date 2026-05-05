@@ -5,8 +5,11 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
@@ -50,9 +53,14 @@ public class CryptoService {
      */
     public SecretKey decryptAESKey(String encryptedAESKeyBase64) throws Exception {
         byte[] encryptedKeyBytes = Base64.getDecoder().decode(encryptedAESKeyBase64);
-        Cipher rsaCipher = Cipher.getInstance(RSA_ALGORITHM);
-        rsaCipher.init(Cipher.DECRYPT_MODE, bankKeyPair.getPrivate());
+
+        Cipher rsaCipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
+        OAEPParameterSpec oaepParams = new OAEPParameterSpec(
+                "SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
+        
+        rsaCipher.init(Cipher.DECRYPT_MODE, bankKeyPair.getPrivate(), oaepParams);
         byte[] aesKeyBytes = rsaCipher.doFinal(encryptedKeyBytes);
+
         return new SecretKeySpec(aesKeyBytes, "AES");
     }
 
